@@ -9,7 +9,7 @@ const messaging = getMessaging();
 
 //count the messages
 exports.incrementMessageCount = onDocumentCreated(
-  "chats/{groupId}/messages/{messageId}",
+  "groups/{groupId}/messages/{messageId}",
   async (event) => {
     const { groupId } = event.params;
 
@@ -17,7 +17,7 @@ exports.incrementMessageCount = onDocumentCreated(
       console.log("Incrementing message count for group:", groupId);
 
       // Reference to chat group doc
-      const groupRef = db.collection("chats").doc(groupId);
+      const groupRef = db.collection("groups").doc(groupId);
 
       // Increment messageCount by 1
       await groupRef.set(
@@ -38,7 +38,7 @@ exports.incrementMessageCount = onDocumentCreated(
 
 //send the notifications
 exports.notifyGroupMembers = onDocumentCreated(
-  "chats/{groupId}/messages/{messageId}",
+  "groups/{groupId}/messages/{messageId}",
   async (event) => {
     const { groupId } = event.params;
     const message = event.data.data();
@@ -46,7 +46,7 @@ exports.notifyGroupMembers = onDocumentCreated(
 
     console.log("New message in group:", groupId, "from:", senderId);
     try{
-      const groupDoc = await db.collection("chats").doc(groupId).get();
+      const groupDoc = await db.collection("groups").doc(groupId).get();
       const data = groupDoc.data();
       const count = data?.messageCount || 0;
 
@@ -58,7 +58,7 @@ exports.notifyGroupMembers = onDocumentCreated(
       }
       // 1. Fetch group members
       const membersSnapshot = await db
-        .collection("chats")
+        .collection("groups")
         .doc(groupId)
         .collection("members")
         .get();
