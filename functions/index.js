@@ -1,3 +1,12 @@
+const { onDocumentCreated } = require("firebase-functions/v2/firestore");
+const { initializeApp } = require("firebase-admin/app");
+const { getFirestore } = require("firebase-admin/firestore");
+const { getMessaging } = require("firebase-admin/messaging");
+
+initializeApp();
+const db = getFirestore();
+const messaging = getMessaging();
+
 exports.notifyGroupMembers = onDocumentCreated(
   "chats/{groupId}/messages/{messageId}",
   async (event) => {
@@ -71,17 +80,3 @@ exports.notifyGroupMembers = onDocumentCreated(
     }
   }
 );
-```
-
-## Check These Issues:
-
-### 1. **FCM Token Validity**
-The token in your example looks correct format-wise, but:
-- Tokens expire when the app is uninstalled/reinstalled
-- Tokens can become invalid after ~2 months of inactivity
-- Make sure you're refreshing tokens in your app when they change
-
-### 2. **Firebase Cloud Messaging API**
-Enable it in Google Cloud Console:
-```
-// https://console.cloud.google.com/apis/library/fcm.googleapis.com
