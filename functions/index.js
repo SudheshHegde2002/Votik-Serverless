@@ -15,36 +15,33 @@ exports.notifyGroupMembers = onDocumentCreated(
     const senderId = message.user._id;
 
     try {
-      // 1. Get group members
+      // 1. Fetch group members
       const membersSnapshot = await db
         .collection("chats")
         .doc(groupId)
         .collection("members")
         .get();
 
-      let userIds = [];
+      const userIds = [];
       membersSnapshot.forEach((doc) => {
-        if (doc.id !== senderId) {
-          userIds.push(doc.id);
-        }
+        if (doc.id !== senderId) userIds.push(doc.id);
       });
 
-      if (userIds.length === 0) return;
+      if (!userIds.length) return;
 
       // 2. Fetch tokens
-      let tokens = [];
-      for (let uid of userIds) {
-        const userDoc = await db.collection("users").doc(uid).get();
-        const userData = userDoc.data();
-        if (userData?.fcmToken) {
-          tokens.push(userData.fcmToken);
-        }
+      const tokens = [];
+      for (const uid of userIds) {
+        const userDoc = await db.collection("votik-users").doc(uid).get();
+        const data = userDoc.data();
+        if (data?.fcmToken) tokens.push(data.fcmToken);
       }
 
-      if (tokens.length === 0) return;
+      if (!tokens.length) return;
 
-      // 3. Notification payload
-      const payload = {
+      // 3. Send notification (correct API for Node 22)
+      const response = await messaging.sendEachForMulticast({
+        tokens,
         notification: {
           title: "New Group Message",
           body: message.text || "You have a new message",
@@ -52,11 +49,9 @@ exports.notifyGroupMembers = onDocumentCreated(
         data: {
           groupId,
         },
-      };
+      });
 
-      // 4. Send notification
-      await messaging.sendToDevice(tokens, payload);
-      console.log("Notifications sent to:", tokens.length);
+      console.log("Notifications sent:", response.successCount);
     } catch (err) {
       console.error("Notification error:", err);
     }
