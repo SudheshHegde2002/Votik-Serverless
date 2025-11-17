@@ -1,12 +1,42 @@
 const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const { initializeApp } = require("firebase-admin/app");
-const { getFirestore } = require("firebase-admin/firestore");
+const { getFirestore,FieldValue } = require("firebase-admin/firestore");
 const { getMessaging } = require("firebase-admin/messaging");
 
 initializeApp();
 const db = getFirestore();
 const messaging = getMessaging();
 
+//count the messages
+exports.incrementMessageCount = onDocumentCreated(
+  "chats/{groupId}/messages/{messageId}",
+  async (event) => {
+    const { groupId } = event.params;
+
+    try {
+      console.log("Incrementing message count for group:", groupId);
+
+      // Reference to chat group doc
+      const groupRef = db.collection("chats").doc(groupId);
+
+      // Increment messageCount by 1
+      await groupRef.set(
+        {
+          messageCount: FieldValue.increment(1),
+        },
+        { merge: true }
+      );
+
+      console.log("messageCount incremented for:", groupId);
+    } catch (err) {
+      console.error("Error incrementing messageCount:", err);
+    }
+
+    return null;
+  }
+);
+
+//send the notifications
 exports.notifyGroupMembers = onDocumentCreated(
   "chats/{groupId}/messages/{messageId}",
   async (event) => {
@@ -15,8 +45,17 @@ exports.notifyGroupMembers = onDocumentCreated(
     const senderId = message.user._id;
 
     console.log("New message in group:", groupId, "from:", senderId);
+    try{
+      const groupDoc = await db.collection("chats").doc(groupId).get();
+      const data = groupDoc.data();
+      const count = data?.messageCount || 0;
 
-    try {
+      console.log("Current messageCount:", count);
+
+      if (count % 20 !== 0) {
+        console.log("Not sending notification. Waiting for next 20 messages.");
+        return null;
+      }
       // 1. Fetch group members
       const membersSnapshot = await db
         .collection("chats")
