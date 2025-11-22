@@ -6,6 +6,24 @@ const { getMessaging } = require("firebase-admin/messaging");
 initializeApp();
 const db = getFirestore();
 const messaging = getMessaging();
+// Add this at the top of your function
+const notificationBodies = [
+  "Don’t Miss the Buzz — Join the Vibe!",
+  "The Party’s Already Started. You In?",
+  "Hey, the Crowd’s Talking — Slide In!",
+  "Your Portal’s Open. Step Inside", 
+  "Miss This, Miss Everything",
+  "It’s Happening Now. Don’t Be Ghost",
+  "New Universe Unlocked — Say Hi!",
+  "The Hype Is Live — Don’t Watch, Join",
+  "Fade into the Crowd or Stand Out? Your Move.",
+  "You’re Not Alone — Meet Your Event Crew",
+  "The Hype Is Live — Dive In!",
+  "Crowd’s Lit. Where You At?",
+  "Don’t Watch. Join the Vibe!",
+  "The Moment’s Now. Feel It Together.",
+  "Voices Unlocked. Make Some Noise!"
+];
 
 //count the messages
 exports.incrementMessageCount = onDocumentCreated(
@@ -88,13 +106,13 @@ exports.notifyGroupMembers = onDocumentCreated(
         console.log("No FCM tokens available");
         return;
       }
-
+      const randomTitle = notificationBodies[Math.floor(Math.random() * notificationBodies.length)];
       // 3. Send notification
       const response = await messaging.sendEachForMulticast({
         tokens,
         notification: {
-          title: "New Group Message",
-          body: message.text || "You have a new message",
+          title: randomTitle,
+          body: "You have new messages!",
         },
         data: {
           groupId,
